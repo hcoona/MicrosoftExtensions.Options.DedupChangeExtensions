@@ -10,7 +10,7 @@
     <PackageProjectUrl>https://github.com/hcoona/MicrosoftExtensions.Options.DedupChangeExtensions</PackageProjectUrl>
     <RepositoryUrl>https://github.com/hcoona/MicrosoftExtensions.Options.DedupChangeExtensions</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
-    <PackageTags>clock</PackageTags>
+    <PackageTags>aspnetcore options</PackageTags>
     <PackageReleaseNotes>$(Description)</PackageReleaseNotes>
   </PropertyGroup>
 
