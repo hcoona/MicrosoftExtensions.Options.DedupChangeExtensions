@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 using System.Threading;
@@ -8,8 +9,8 @@ namespace Microsoft.Extensions.Options
 {
     public static class OptionsDedupChangeExtensions
     {
-        private readonly static ThreadLocal<BinaryFormatter> binaryFormatterLocal =
-            new ThreadLocal<BinaryFormatter>(() => new BinaryFormatter());
+        private readonly static ThreadLocal<IFormatter> formatterLocal =
+            new ThreadLocal<IFormatter>(() => new BinaryFormatter());
         private readonly static ThreadLocal<HashAlgorithm> hashAlgorithmLocal =
             new ThreadLocal<HashAlgorithm>(SHA1.Create);
 
@@ -21,9 +22,17 @@ namespace Microsoft.Extensions.Options
             var originValueHashToken = GetHashToken(monitor.Get(name));
             return monitor.OnChange((newValue, key) =>
             {
-                if (key == name && !IsHashTokenEqual(originValueHashToken, GetHashToken(newValue)))
+                if (key == name)
                 {
-                    listener(newValue, key);
+                    var newValueHashToken = GetHashToken(newValue);
+                    var oldValueHashToken = Interlocked.Exchange(
+                        ref originValueHashToken,
+                        newValueHashToken);
+
+                    if (!IsHashTokenEqual(oldValueHashToken, newValueHashToken))
+                    {
+                        listener(newValue, key);
+                    }
                 }
             });
         }
@@ -42,7 +51,7 @@ namespace Microsoft.Extensions.Options
         {
             using (var stream = new MemoryStream())
             {
-                binaryFormatterLocal.Value.Serialize(stream, graph);
+                formatterLocal.Value.Serialize(stream, graph);
                 stream.Seek(0, SeekOrigin.Begin);
                 return hashAlgorithmLocal.Value.ComputeHash(stream);
             }
